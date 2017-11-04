@@ -429,6 +429,22 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
              };
 }
 
+- (NSDictionary*) createAttachmentResponse:(NSString*)filePath squarePath:(NSString*)squareFilePath withExif:(NSDictionary*) exif withSourceURL:(NSString*)sourceURL withLocalIdentifier:(NSString*)localIdentifier withFilename:(NSString*)filename withWidth:(NSNumber*)width withHeight:(NSNumber*)height withMime:(NSString*)mime withSize:(NSNumber*)size withData:(NSString*)data {
+    return @{
+             @"path": filePath,
+             @"squarePath": squareFilePath,
+             @"sourceURL": (sourceURL) ? sourceURL : [NSNull null],
+             @"localIdentifier": (localIdentifier) ? localIdentifier : [NSNull null],
+             @"filename": (filename) ? filename : [NSNull null],
+             @"width": width,
+             @"height": height,
+             @"mime": mime,
+             @"size": size,
+             @"data": (data) ? data : [NSNull null],
+             @"exif": (exif) ? exif : [NSNull null],
+             };
+}
+
 - (void)qb_imagePickerController:
 (QBImagePickerController *)imagePickerController
           didFinishPickingAssets:(NSArray *)assets {
@@ -508,12 +524,18 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
                                      return;
                                  }
                                  
+                                 // Square
+                                 UIImage *squareImage = [self squareImage:resizedImage];
+                                 ImageResult *squareImageResult = [self.compression compressImage:squareImage withOptions:self.options];
+                                 NSString *squareFilePath = [self persistFile:squareImageResult.data];
+                                 
                                  NSDictionary* exif = nil;
                                  if([[self.options objectForKey:@"includeExif"] boolValue]) {
                                      exif = [[CIImage imageWithData:imageData] properties];
                                  }
                                  
                                  [selections addObject:[self createAttachmentResponse:filePath
+                                                                           squarePath: squareFilePath
                                                                              withExif: exif
                                                                         withSourceURL:[sourceURL absoluteString]
                                                                   withLocalIdentifier: phAsset.localIdentifier
@@ -790,6 +812,46 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
                   usingCropRect:(CGRect)cropRect
                   rotationAngle:(CGFloat)rotationAngle {
     [self imageCropViewController:controller didCropImage:croppedImage usingCropRect:cropRect];
+}
+
+// MARK -
+-(UIImage *)squareImage:(UIImage *)image {
+    if (image.size.width>=image.size.height) {
+        image=[self imageWithImage:image scaledToHeight:image.size.height];
+    }
+    else {
+        image=[self imageWithImage:image scaledToWidth:image.size.width];
+    }
+    
+    return image;
+}
+
+-(UIImage*)imageWithImage:(UIImage*)sourceImage scaledToWidth:(float)width {
+    float oldWidth = sourceImage.size.width;
+    float scaleFactor = width / oldWidth;
+    
+    float newHeight = sourceImage.size.height * scaleFactor;
+    float newWidth = oldWidth * scaleFactor;
+    
+    UIGraphicsBeginImageContext(CGSizeMake(newWidth, newWidth));
+    [sourceImage drawInRect:CGRectMake(0, 0, newWidth, newHeight)];
+    UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return newImage;
+}
+
+-(UIImage*)imageWithImage:(UIImage*)sourceImage scaledToHeight:(float)height {
+    float oldHeight = sourceImage.size.height;
+    float scaleFactor = height / oldHeight;
+    
+    float newWidth = sourceImage.size.width * scaleFactor;
+    float newHeight = oldHeight * scaleFactor;
+    
+    UIGraphicsBeginImageContext(CGSizeMake(newHeight, newHeight));
+    [sourceImage drawInRect:CGRectMake(0, 0, newWidth, newHeight)];
+    UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return newImage;
 }
 
 @end
