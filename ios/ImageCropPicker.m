@@ -164,12 +164,19 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
     UIImage *chosenImage = [info objectForKey:UIImagePickerControllerOriginalImage];
     UIImage *chosenImageT = [chosenImage fixOrientation];
     
+    UIImage *resizedImage = chosenImageT;
+    if (chosenImageT.size.width != 0) {
+        CGFloat width = [UIScreen mainScreen].bounds.size.width;
+        CGFloat heigth = width * chosenImageT.size.height / chosenImageT.size.width;
+        resizedImage = [chosenImageT resizedImageToSize:CGSizeMake(width, heigth)];
+    }
+    
     NSDictionary *exif;
     if([[self.options objectForKey:@"includeExif"] boolValue]) {
         exif = [info objectForKey:UIImagePickerControllerMediaMetadata];
     }
     
-    [self processSingleImagePick:chosenImageT withExif:exif withViewController:picker withSourceURL:self.croppingFile[@"sourceURL"] withLocalIdentifier:self.croppingFile[@"localIdentifier"] withFilename:self.croppingFile[@"filename"]];
+    [self processSingleImagePick:resizedImage withExif:exif withViewController:picker withSourceURL:self.croppingFile[@"sourceURL"] withLocalIdentifier:self.croppingFile[@"localIdentifier"] withFilename:self.croppingFile[@"filename"]];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker {
@@ -482,7 +489,14 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
                                  UIImage *imgT = [UIImage imageWithData:imageData];
                                  UIImage *imageT = [imgT fixOrientation];
                                  
-                                 ImageResult *imageResult = [self.compression compressImage:imageT withOptions:self.options];
+                                 UIImage *resizedImage = imageT;
+                                 if (imageT.size.width != 0) {
+                                     CGFloat width = [UIScreen mainScreen].bounds.size.width;
+                                     CGFloat heigth = width * imageT.size.height / imageT.size.width;
+                                     resizedImage = [chosenImageT resizedImageToSize:CGSizeMake(width, heigth)];
+                                 }
+                                 
+                                 ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
                                  NSString *filePath = [self persistFile:imageResult.data];
                                  
                                  if (filePath == nil) {
