@@ -166,7 +166,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
     
     UIImage *resizedImage = chosenImageT;
     if (chosenImageT.size.width != 0) {
-        CGFloat width = [UIScreen mainScreen].bounds.size.width;
+        CGFloat width = [UIScreen mainScreen].bounds.size.width  * [UIScreen mainScreen].scale;
         CGFloat heigth = width * chosenImageT.size.height / chosenImageT.size.width;
         resizedImage = [chosenImageT resizedImageToSize:CGSizeMake(width, heigth)];
     }
@@ -491,7 +491,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
                                  
                                  UIImage *resizedImage = imageT;
                                  if (imageT.size.width != 0) {
-                                     CGFloat width = [UIScreen mainScreen].bounds.size.width;
+                                     CGFloat width = [UIScreen mainScreen].bounds.size.width  * [UIScreen mainScreen].scale;
                                      CGFloat heigth = width * imageT.size.height / imageT.size.width;
                                      resizedImage = [imageT resizedImageToSize:CGSizeMake(width, heigth)];
                                  }
