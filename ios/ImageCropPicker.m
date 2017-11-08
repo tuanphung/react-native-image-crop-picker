@@ -630,6 +630,13 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         return;
     }
     
+    UIImage *resizedImage = image;
+    if (image.size.width != 0) {
+        CGFloat width = [UIScreen mainScreen].bounds.size.width  * [UIScreen mainScreen].scale;
+        CGFloat heigth = width * image.size.height / image.size.width;
+        resizedImage = [image resizedImageToSize:CGSizeMake(width, heigth)];
+    }
+    
     NSLog(@"id: %@ filename: %@", localIdentifier, filename);
     
     if ([[[self options] objectForKey:@"cropping"] boolValue]) {
@@ -639,9 +646,9 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         self.croppingFile[@"filename"] = filename;
         NSLog(@"CroppingFile %@", self.croppingFile);
         
-        [self startCropping:image];
+        [self startCropping:resizedImage];
     } else {
-        ImageResult *imageResult = [self.compression compressImage:image withOptions:self.options];
+        ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
         NSString *filePath = [self persistFile:imageResult.data];
         if (filePath == nil) {
             [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
