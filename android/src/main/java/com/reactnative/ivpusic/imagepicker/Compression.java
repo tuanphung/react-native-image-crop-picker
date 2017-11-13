@@ -2,14 +2,20 @@ package com.reactnative.ivpusic.imagepicker;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Environment;
 import android.util.Log;
+
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReadableMap;
-import id.zelory.compressor.Compressor;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+
+import id.zelory.compressor.Compressor;
+
+import static android.os.Environment.getExternalStoragePublicDirectory;
 
 /**
  * Created by ipusic on 12/27/16.
@@ -30,7 +36,7 @@ class Compression {
         Log.d("image-crop-picker", "Image compression activated");
         Compressor compressor = new Compressor(activity)
                 .setCompressFormat(Bitmap.CompressFormat.JPEG)
-                .setDestinationDirectoryPath(Environment.getExternalStoragePublicDirectory(
+                .setDestinationDirectoryPath(getExternalStoragePublicDirectory(
                         Environment.DIRECTORY_PICTURES).getAbsolutePath());
 
         if (quality == null) {
@@ -51,14 +57,14 @@ class Compression {
             compressor.setMaxHeight(maxHeight);
         }
 
-        File image = new File(originalImagePath); 
+        File image = new File(originalImagePath);
 
         String[] paths = image.getName().split("\\.(?=[^\\.]+$)");
         String compressedFileName = paths[0] + "-compressed";
-        
-        if(paths.length > 1)
+
+        if (paths.length > 1)
             compressedFileName += "." + paths[1];
-        
+
         return compressor
                 .compressToFile(image, compressedFileName);
     }
@@ -67,5 +73,73 @@ class Compression {
         // todo: video compression
         // failed attempt 1: ffmpeg => slow and licensing issues
         promise.resolve(originalVideo);
+    }
+
+    File compressSquareImage(final Activity activity, final ReadableMap options, final String originalImagePath) throws IOException {
+        Integer maxWidth = options.hasKey("compressImageMaxWidth") ? options.getInt("compressImageMaxWidth") : null;
+        Integer maxHeight = options.hasKey("compressImageMaxHeight") ? options.getInt("compressImageMaxHeight") : null;
+        Double quality = options.hasKey("compressImageQuality") ? options.getDouble("compressImageQuality") : null;
+
+        Integer width = options.hasKey("width") ? options.getInt("width") : null;
+        Integer height = options.hasKey("height") ? options.getInt("height") : null;
+
+        if (maxWidth == null && maxHeight == null && quality == null) {
+            Log.d("image-crop-picker", "Skipping image compression");
+            return new File(originalImagePath);
+        }
+
+        Integer minSize = maxWidth;
+        if (minSize == null || (maxHeight != null && maxHeight < minSize)) {
+            minSize = maxHeight;
+        }
+        if (minSize == null || (width != null && width < minSize)) {
+            minSize = width;
+        }
+        if (minSize == null || (height != null && height < minSize)) {
+            minSize = height;
+        }
+
+        // Scale
+        Log.d("image-crop-picker", "Image compression activated");
+        Compressor compressor = new Compressor(activity)
+                .setCompressFormat(Bitmap.CompressFormat.JPEG)
+                .setDestinationDirectoryPath(getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES).getAbsolutePath());
+
+        if (quality == null) {
+            Log.d("image-crop-picker", "Compressing image with quality 100");
+            compressor.setQuality(100);
+        } else {
+            Log.d("image-crop-picker", "Compressing image with quality " + (quality * 100));
+            compressor.setQuality((int) (quality * 100));
+        }
+
+        if (minSize != null) {
+            compressor.setMaxHeight(minSize);
+            compressor.setMaxWidth(minSize);
+        }
+
+        Bitmap bmp = compressor.compressToBitmap(new File(originalImagePath));
+
+        // Crop
+        minSize = bmp.getWidth() > bmp.getHeight() ? bmp.getHeight() : bmp.getWidth();
+        int x = (bmp.getWidth() - minSize) / 2;
+        int y = (bmp.getHeight() - minSize) / 2;
+        bmp = Bitmap.createBitmap(bmp, x, y, minSize, minSize);
+
+        String[] paths = originalImagePath.split("\\.(?=[^\\.]+$)");
+        String compressedFileName = paths[0] + "-square";
+
+        if (paths.length > 1)
+            compressedFileName += "." + paths[1];
+
+        File file = new File(compressedFileName);
+        FileOutputStream fOut = new FileOutputStream(file);
+
+        bmp.compress(Bitmap.CompressFormat.PNG, 85, fOut);
+        fOut.flush();
+        fOut.close();
+
+        return file;
     }
 }

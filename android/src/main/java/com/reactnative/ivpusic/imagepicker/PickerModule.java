@@ -531,6 +531,10 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         String compressedImagePath = compressedImage.getPath();
         BitmapFactory.Options options = validateImage(compressedImagePath);
 
+        File compressedSquareImage = compression.compressSquareImage(activity, this.options, path);
+        String compressedSquareImagePath = compressedSquareImage.getPath();
+
+        image.putString("squarePath", "file://" + compressedSquareImagePath);
         image.putString("path", "file://" + compressedImagePath);
         image.putInt("width", options.outWidth);
         image.putInt("height", options.outHeight);
