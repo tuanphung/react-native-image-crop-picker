@@ -24,6 +24,7 @@
   ],
   "author": "Tuan Phung",
   "license": "MIT",
+  "bugs":{
     "url": "https://github.com/tuanphung/react-native-image-crop-picker/issues"
   },
   "homepage": "https://github.com/tuanphung/react-native-image-crop-picker#readme",
